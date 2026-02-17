@@ -24,6 +24,13 @@ export const API_CONFIG = {
       PAY_BILL: '/wallet/pay-bill',
       TRANSACTIONS: '/wallet/transactions',
     },
+    PAYMENT: {
+      CHAPA_INITIALIZE: '/payment/initialize',
+      CHAPA_MOBILE: '/payment/initialize-mobile',
+      CHAPA_VERIFY: '/payment/verify',
+      STRIPE_INITIALIZE: '/payment/stripe/initialize',
+      STRIPE_VERIFY: '/payment/stripe/verify',
+    },
   },
 };
 
