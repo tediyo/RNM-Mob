@@ -13,6 +13,12 @@ interface TransactionsScreenProps {
   navigation: any;
 }
 
+const formatAmount = (amount?: number) =>
+  typeof amount === 'number' ? amount.toFixed(2) : '0.00';
+
+const formatBalance = (balance?: number) =>
+  typeof balance === 'number' ? balance.toFixed(2) : '0.00';
+
 const TransactionsScreen: React.FC<TransactionsScreenProps> = ({ navigation }) => {
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,7 +48,9 @@ const TransactionsScreen: React.FC<TransactionsScreenProps> = ({ navigation }) =
   const renderTransaction = ({ item }: { item: WalletTransaction }) => (
     <View style={styles.transactionItem}>
       <View style={styles.transactionInfo}>
-        <Text style={styles.transactionDescription}>{item.description}</Text>
+        <Text style={styles.transactionDescription}>
+          {item.description ?? item.type.toUpperCase()}
+        </Text>
         <Text style={styles.transactionDate}>
           {new Date(item.createdAt).toLocaleString()}
         </Text>
@@ -54,12 +62,14 @@ const TransactionsScreen: React.FC<TransactionsScreenProps> = ({ navigation }) =
             item.type === 'credit' ? styles.creditAmount : styles.debitAmount,
           ]}
         >
-          {item.type === 'credit' ? '+' : '-'}
-          {item.amount.toFixed(2)}
+          {item.type === 'recharge' ? '+' : item.type === 'bill' ? '-' : ''}
+          {formatAmount(item.amount)}
         </Text>
-        <Text style={styles.transactionCurrency}>{item.currency}</Text>
+        <Text style={styles.transactionCurrency}>
+          {item.currency ?? 'ETB'}
+        </Text>
         <Text style={styles.balanceAfter}>
-          Balance: {item.balanceAfter.toFixed(2)}
+          Balance: {formatBalance(item.balanceAfter)}
         </Text>
       </View>
     </View>

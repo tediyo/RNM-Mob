@@ -26,14 +26,15 @@ export interface PayBillData {
   billDetails?: any;
 }
 
+// Shape returned by backend wallet transactions API
 export interface WalletTransaction {
   _id: string;
-  userId: string;
-  type: 'credit' | 'debit';
-  amount: number;
-  currency: string;
-  description: string;
-  balanceAfter: number;
+  type: 'recharge' | 'transfer' | 'bill';
+  amount?: number;
+  // Optional / derived fields used by the UI
+  currency?: string;
+  description?: string;
+  balanceAfter?: number;
   createdAt: string;
 }
 

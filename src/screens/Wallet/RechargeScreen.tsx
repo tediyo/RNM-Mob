@@ -10,47 +10,113 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import walletService from '../../services/wallet.service';
+import * as WebBrowser from 'expo-web-browser';
+import paymentService from '../../services/payment.service';
 
 interface RechargeScreenProps {
   navigation: any;
 }
 
-const RechargeScreen: React.FC<RechargeScreenProps> = ({ navigation }) => {
+const RechargeScreen: React.FC<RechargeScreenProps> = () => {
   const [amount, setAmount] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [chapaLoading, setChapaLoading] = useState(false);
+  const [stripeLoading, setStripeLoading] = useState(false);
 
-  const handleRecharge = async () => {
+  const parseAmount = () => {
     const amountNum = parseFloat(amount);
-    
     if (!amount || isNaN(amountNum) || amountNum <= 0) {
       Alert.alert('Error', 'Please enter a valid amount');
-      return;
+      return null;
     }
+    return amountNum;
+  };
 
-    setLoading(true);
+  const handleChapaMobile = async () => {
+    const amountNum = parseAmount();
+    if (!amountNum) return;
+
+    setChapaLoading(true);
     try {
-      const response = await walletService.recharge({
+      const response = await paymentService.initializeChapaMobile({
+        amount: amountNum,
+        currency: 'ETB',
+        callback_url: 'https://example.com/payment/callback',
+        return_url: 'https://example.com/payment/return',
+      });
+
+      console.log('Full Chapa Response:', JSON.stringify(response, null, 2));
+
+      // Try multiple possible response structures
+      const url =
+        response?.data?.checkout_url ||
+        response?.data?.data?.checkout_url ||
+        response?.checkout_url ||
+        response?.data?.mobile_url ||
+        response?.mobile_url ||
+        response?.url;
+
+      if (url) {
+        console.log('Opening Chapa URL:', url);
+        const result = await WebBrowser.openBrowserAsync(url);
+        console.log('Browser result:', result);
+        
+        // After browser closes, you might want to verify payment status
+        // This is optional - you can add payment verification here
+      } else {
+        console.error('No URL found in response:', response);
+        Alert.alert(
+          'Error',
+          'Payment URL not found in response. Response: ' + JSON.stringify(response),
+        );
+      }
+    } catch (error: any) {
+      console.error('Chapa error details:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response?.data,
+      });
+      
+      const errorMessage = 
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to start Chapa payment. Please check your connection and try again.';
+      
+      Alert.alert('Payment Error', errorMessage);
+    } finally {
+      setChapaLoading(false);
+    }
+  };
+
+  const handleStripe = async () => {
+    const amountNum = parseAmount();
+    if (!amountNum) return;
+
+    setStripeLoading(true);
+    try {
+      const response = await paymentService.initializeStripe({
         amount: amountNum,
         currency: 'ETB',
       });
-      
-      Alert.alert(
-        'Success',
-        'Recharge request submitted successfully',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              navigation.goBack();
-            },
-          },
-        ]
-      );
+
+      if (response?.url) {
+        await WebBrowser.openBrowserAsync(response.url);
+      } else {
+        Alert.alert('Error', 'Stripe checkout URL not found');
+      }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to recharge wallet');
+      console.log(
+        'Stripe error:',
+        JSON.stringify(error?.response?.data || error, null, 2),
+      );
+      Alert.alert(
+        'Error',
+        error?.response?.data?.message ||
+          JSON.stringify(
+            error?.response?.data || error.message || 'Failed to start Stripe payment',
+          ),
+      );
     } finally {
-      setLoading(false);
+      setStripeLoading(false);
     }
   };
 
@@ -75,14 +141,26 @@ const RechargeScreen: React.FC<RechargeScreenProps> = ({ navigation }) => {
         </View>
 
         <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleRecharge}
-          disabled={loading}
+          style={[styles.button, chapaLoading && styles.buttonDisabled]}
+          onPress={handleChapaMobile}
+          disabled={chapaLoading || stripeLoading}
         >
-          {loading ? (
+          {chapaLoading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Recharge</Text>
+            <Text style={styles.buttonText}>Pay with Chapa</Text>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.stripeButton, stripeLoading && styles.buttonDisabled]}
+          onPress={handleStripe}
+          disabled={chapaLoading || stripeLoading}
+        >
+          {stripeLoading ? (
+            <ActivityIndicator color="#000" />
+          ) : (
+            <Text style={styles.stripeButtonText}>Pay with Stripe</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -141,12 +219,23 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
+    marginTop: 8,
+  },
+  stripeButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#007AFF',
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   buttonText: {
     color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  stripeButtonText: {
+    color: '#007AFF',
     fontSize: 18,
     fontWeight: '600',
   },

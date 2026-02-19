@@ -16,6 +16,9 @@ interface WalletScreenProps {
   navigation: any;
 }
 
+const formatAmount = (amount?: number) =>
+  typeof amount === 'number' ? amount.toFixed(2) : '0.00';
+
 const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
@@ -118,7 +121,7 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
             <View key={transaction._id} style={styles.transactionItem}>
               <View style={styles.transactionInfo}>
                 <Text style={styles.transactionDescription}>
-                  {transaction.description}
+                  {transaction.description ?? transaction.type.toUpperCase()}
                 </Text>
                 <Text style={styles.transactionDate}>
                   {new Date(transaction.createdAt).toLocaleDateString()}
@@ -132,8 +135,12 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
                     : styles.debitAmount,
                 ]}
               >
-                {transaction.type === 'credit' ? '+' : '-'}
-                {transaction.amount.toFixed(2)} {transaction.currency}
+                {transaction.type === 'recharge'
+                  ? '+'
+                  : transaction.type === 'bill'
+                  ? '-'
+                  : ''}
+                {formatAmount(transaction.amount)} {transaction.currency ?? 'ETB'}
               </Text>
             </View>
           ))
