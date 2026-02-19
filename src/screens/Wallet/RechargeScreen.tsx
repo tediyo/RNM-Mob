@@ -44,28 +44,44 @@ const RechargeScreen: React.FC<RechargeScreenProps> = () => {
         return_url: 'https://example.com/payment/return',
       });
 
+      console.log('Full Chapa Response:', JSON.stringify(response, null, 2));
+
+      // Try multiple possible response structures
       const url =
         response?.data?.checkout_url ||
         response?.data?.data?.checkout_url ||
-        response?.checkout_url;
+        response?.checkout_url ||
+        response?.data?.mobile_url ||
+        response?.mobile_url ||
+        response?.url;
 
       if (url) {
-        await WebBrowser.openBrowserAsync(url);
+        console.log('Opening Chapa URL:', url);
+        const result = await WebBrowser.openBrowserAsync(url);
+        console.log('Browser result:', result);
+        
+        // After browser closes, you might want to verify payment status
+        // This is optional - you can add payment verification here
       } else {
-        Alert.alert('Error', 'Payment URL not found in response');
+        console.error('No URL found in response:', response);
+        Alert.alert(
+          'Error',
+          'Payment URL not found in response. Response: ' + JSON.stringify(response),
+        );
       }
     } catch (error: any) {
-      console.log(
-        'Chapa error:',
-        JSON.stringify(error?.response?.data || error, null, 2),
-      );
-      Alert.alert(
-        'Error',
+      console.error('Chapa error details:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response?.data,
+      });
+      
+      const errorMessage = 
         error?.response?.data?.message ||
-          JSON.stringify(
-            error?.response?.data || error.message || 'Failed to start Chapa payment',
-          ),
-      );
+        error?.message ||
+        'Failed to start Chapa payment. Please check your connection and try again.';
+      
+      Alert.alert('Payment Error', errorMessage);
     } finally {
       setChapaLoading(false);
     }
