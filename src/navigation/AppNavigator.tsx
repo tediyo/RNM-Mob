@@ -7,6 +7,7 @@ import RegisterScreen from '../screens/Auth/RegisterScreen';
 import WalletScreen from '../screens/Wallet/WalletScreen';
 import RechargeScreen from '../screens/Wallet/RechargeScreen';
 import TransactionsScreen from '../screens/Wallet/TransactionsScreen';
+import TransactionDetailScreen from '../screens/Wallet/TransactionDetailScreen';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 
 export type RootStackParamList = {
@@ -15,6 +16,7 @@ export type RootStackParamList = {
   Wallet: undefined;
   Recharge: undefined;
   Transactions: undefined;
+  TransactionDetail: { transaction: any };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -60,6 +62,15 @@ const AppNavigator: React.FC = () => {
               options={{
                 headerShown: true,
                 title: 'Transactions',
+                headerBackTitle: 'Back',
+              }}
+            />
+            <Stack.Screen
+              name="TransactionDetail"
+              component={TransactionDetailScreen}
+              options={{
+                headerShown: true,
+                title: 'Transaction Details',
                 headerBackTitle: 'Back',
               }}
             />

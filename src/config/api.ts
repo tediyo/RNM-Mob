@@ -2,20 +2,21 @@
 import { Platform } from 'react-native';
 
 // IMPORTANT: For physical device testing, use your computer's IP address
-// Your Wi-Fi IP: 192.168.0.143 (from ipconfig)
+// Your Wi-Fi IP: 192.168.0.117 (from ipconfig)
 // For Android emulator, use: 10.0.2.2
 // For iOS simulator, use: localhost
 
 // Use this IP for physical device testing (Wi-Fi IP from ipconfig)
-const DEVICE_IP = '192.168.0.143';
+const DEVICE_IP = '192.168.0.117';
 
 // Configure base URL based on platform
-// Android emulator uses 10.0.2.2, physical devices use DEVICE_IP
-// iOS simulator uses localhost, physical devices use DEVICE_IP
+// Android emulator uses special IP 10.0.2.2 to reach host machine's localhost
+// iOS simulator can use localhost directly
+// Physical devices should use the DEVICE_IP (your computer's Wi-Fi IP)
 const LOCAL_BASE_URL =
   Platform.OS === 'android'
-    ? `http://${DEVICE_IP}:3000` // Use DEVICE_IP for both emulator and physical device
-    : `http://${DEVICE_IP}:3000`; // Use DEVICE_IP for both simulator and physical device
+    ? 'http://10.0.2.2:3000'        // Android emulator -> host localhost
+    : 'http://localhost:3000';       // iOS simulator -> host localhost
 
 export const API_CONFIG = {
   BASE_URL: __DEV__

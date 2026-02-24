@@ -17,7 +17,7 @@ interface RechargeScreenProps {
   navigation: any;
 }
 
-const RechargeScreen: React.FC<RechargeScreenProps> = () => {
+const RechargeScreen: React.FC<RechargeScreenProps> = ({ navigation }) => {
   const [amount, setAmount] = useState('');
   const [chapaLoading, setChapaLoading] = useState(false);
   const [stripeLoading, setStripeLoading] = useState(false);
@@ -59,7 +59,7 @@ const RechargeScreen: React.FC<RechargeScreenProps> = () => {
         console.log('Opening Chapa URL:', url);
         const result = await WebBrowser.openBrowserAsync(url);
         console.log('Browser result:', result);
-        
+
         // After browser closes, you might want to verify payment status
         // This is optional - you can add payment verification here
       } else {
@@ -75,12 +75,12 @@ const RechargeScreen: React.FC<RechargeScreenProps> = () => {
         stack: error.stack,
         response: error.response?.data,
       });
-      
-      const errorMessage = 
+
+      const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
         'Failed to start Chapa payment. Please check your connection and try again.';
-      
+
       Alert.alert('Payment Error', errorMessage);
     } finally {
       setChapaLoading(false);
@@ -98,8 +98,40 @@ const RechargeScreen: React.FC<RechargeScreenProps> = () => {
         currency: 'ETB',
       });
 
+      const sessionId = response?.sessionId;
+
       if (response?.url) {
-        await WebBrowser.openBrowserAsync(response.url);
+        const result = await WebBrowser.openBrowserAsync(response.url);
+        console.log('Stripe browser result:', result);
+
+        // After browser closes, verify the payment with the backend
+        if (sessionId) {
+          try {
+            const verifyResponse = await paymentService.verifyStripePayment(sessionId);
+            console.log('Stripe verify result:', JSON.stringify(verifyResponse, null, 2));
+
+            if (verifyResponse?.status === 'success') {
+              Alert.alert(
+                'Payment Successful',
+                `Your wallet has been recharged with ${amountNum} ETB.`,
+                [{ text: 'OK', onPress: () => navigation.goBack() }]
+              );
+            } else {
+              Alert.alert(
+                'Payment Pending',
+                'Your payment is being processed. Please check your balance shortly.',
+                [{ text: 'OK' }]
+              );
+            }
+          } catch (verifyError: any) {
+            console.log('Stripe verify error:', verifyError.message);
+            Alert.alert(
+              'Payment Status Unknown',
+              'Payment may have been processed. Please refresh your wallet to check your balance.',
+              [{ text: 'OK' }]
+            );
+          }
+        }
       } else {
         Alert.alert('Error', 'Stripe checkout URL not found');
       }
@@ -111,9 +143,9 @@ const RechargeScreen: React.FC<RechargeScreenProps> = () => {
       Alert.alert(
         'Error',
         error?.response?.data?.message ||
-          JSON.stringify(
-            error?.response?.data || error.message || 'Failed to start Stripe payment',
-          ),
+        JSON.stringify(
+          error?.response?.data || error.message || 'Failed to start Stripe payment',
+        ),
       );
     } finally {
       setStripeLoading(false);

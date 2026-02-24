@@ -24,7 +24,7 @@ class PaymentService {
           callback_url: data.callback_url || 'https://example.com/payment/callback',
           return_url: data.return_url || 'https://example.com/payment/return',
         });
-      
+
       console.log('Chapa Response:', JSON.stringify(response.data, null, 2));
       return response.data;
     } catch (error: any) {
@@ -45,11 +45,31 @@ class PaymentService {
           amount: data.amount,
           currency: data.currency,
         });
-      
+
       console.log('Stripe Response:', JSON.stringify(response.data, null, 2));
       return response.data;
     } catch (error: any) {
       console.error('Stripe Payment Error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      throw this.handleError(error);
+    }
+  }
+
+  async verifyStripePayment(sessionId: string) {
+    try {
+      const response = await apiService
+        .getInstance()
+        .post(API_CONFIG.ENDPOINTS.PAYMENT.STRIPE_VERIFY, {
+          sessionId,
+        });
+
+      console.log('Stripe Verify Response:', JSON.stringify(response.data, null, 2));
+      return response.data;
+    } catch (error: any) {
+      console.error('Stripe Verify Error:', {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status,
