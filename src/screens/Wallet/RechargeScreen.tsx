@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
+import { API_CONFIG } from '../../config/api';
 import paymentService from '../../services/payment.service';
 
 interface RechargeScreenProps {
@@ -40,8 +41,8 @@ const RechargeScreen: React.FC<RechargeScreenProps> = ({ navigation }) => {
       const response = await paymentService.initializeChapaMobile({
         amount: amountNum,
         currency: 'ETB',
-        callback_url: 'https://example.com/payment/callback',
-        return_url: 'https://example.com/payment/return',
+        callback_url: `${API_CONFIG.WEBHOOK_BASE_URL}${API_CONFIG.ENDPOINTS.PAYMENT.CHAPA_WEBHOOK}`,
+        return_url: `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PAYMENT.CHAPA_SUCCESS}`,
       });
 
       console.log('Full Chapa Response:', JSON.stringify(response, null, 2));
@@ -60,8 +61,39 @@ const RechargeScreen: React.FC<RechargeScreenProps> = ({ navigation }) => {
         const result = await WebBrowser.openBrowserAsync(url);
         console.log('Browser result:', result);
 
-        // After browser closes, you might want to verify payment status
-        // This is optional - you can add payment verification here
+        // After browser closes, verify payment status
+        if (tx_ref) {
+          console.log('Post-browser: Verifying payment for tx_ref:', tx_ref);
+          try {
+            const verifyResponse = await paymentService.verifyChapaPayment(tx_ref);
+            console.log('Chapa verify result:', JSON.stringify(verifyResponse, null, 2));
+
+            if (verifyResponse?.status === 'success') {
+              Alert.alert(
+                'Payment Successful',
+                `Your wallet has been recharged with ${amountNum} ETB.`,
+                [{ text: 'OK', onPress: () => navigation.goBack() }]
+              );
+            } else {
+              console.log('Payment not yet success:', verifyResponse?.status);
+              Alert.alert(
+                'Payment Pending',
+                'Your payment is being processed. Please check your balance shortly.',
+                [{ text: 'OK', onPress: () => navigation.goBack() }]
+              );
+            }
+          } catch (verifyError: any) {
+            console.error('Chapa verify error details:', {
+              message: verifyError.message,
+              response: verifyError.response?.data,
+            });
+            Alert.alert(
+              'Payment Status Unknown',
+              'Payment may have been processed. Please refresh your wallet to check your balance.',
+              [{ text: 'OK', onPress: () => navigation.goBack() }]
+            );
+          }
+        }
       } else {
         console.error('No URL found in response:', response);
         Alert.alert(
