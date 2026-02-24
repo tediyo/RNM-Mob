@@ -78,6 +78,26 @@ class PaymentService {
     }
   }
 
+  async verifyChapaPayment(tx_ref: string) {
+    try {
+      const response = await apiService
+        .getInstance()
+        .post(API_CONFIG.ENDPOINTS.PAYMENT.CHAPA_VERIFY, {
+          tx_ref,
+        });
+
+      console.log('Chapa Verify Response:', JSON.stringify(response.data, null, 2));
+      return response.data;
+    } catch (error: any) {
+      console.error('Chapa Verify Error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      throw this.handleError(error);
+    }
+  }
+
   private handleError(error: any): Error {
     if (error.response) {
       const message = error.response.data?.message || 'Payment initialization failed';
