@@ -6,6 +6,7 @@ import {
   FlatList,
   RefreshControl,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import walletService, { WalletTransaction } from '../../services/wallet.service';
 
@@ -46,7 +47,11 @@ const TransactionsScreen: React.FC<TransactionsScreenProps> = ({ navigation }) =
   };
 
   const renderTransaction = ({ item }: { item: WalletTransaction }) => (
-    <View style={styles.transactionItem}>
+    <TouchableOpacity
+      style={styles.transactionItem}
+      activeOpacity={0.7}
+      onPress={() => navigation.navigate('TransactionDetail', { transaction: item })}
+    >
       <View style={styles.transactionInfo}>
         <Text style={styles.transactionDescription}>
           {item.description ?? item.type.toUpperCase()}
@@ -59,7 +64,7 @@ const TransactionsScreen: React.FC<TransactionsScreenProps> = ({ navigation }) =
         <Text
           style={[
             styles.transactionAmount,
-            item.type === 'credit' ? styles.creditAmount : styles.debitAmount,
+            item.type === 'recharge' ? styles.creditAmount : styles.debitAmount,
           ]}
         >
           {item.type === 'recharge' ? '+' : item.type === 'bill' ? '-' : ''}
@@ -72,7 +77,8 @@ const TransactionsScreen: React.FC<TransactionsScreenProps> = ({ navigation }) =
           Balance: {formatBalance(item.balanceAfter)}
         </Text>
       </View>
-    </View>
+      <Text style={styles.chevron}>›</Text>
+    </TouchableOpacity>
   );
 
   if (loading) {
@@ -188,6 +194,13 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#666',
+  },
+  chevron: {
+    fontSize: 22,
+    color: '#ccc',
+    fontWeight: '600',
+    alignSelf: 'center',
+    marginLeft: 8,
   },
 });
 

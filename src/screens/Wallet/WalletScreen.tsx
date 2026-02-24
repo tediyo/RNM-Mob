@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import walletService, { Wallet, WalletTransaction } from '../../services/wallet.service';
 import { useAuth } from '../../context/AuthContext';
 
@@ -26,9 +27,12 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const { logout } = useAuth();
 
-  useEffect(() => {
-    loadWalletData();
-  }, []);
+  // Refresh wallet data every time the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadWalletData();
+    }, [])
+  );
 
   const loadWalletData = async () => {
     try {
@@ -118,7 +122,12 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
           <Text style={styles.noTransactions}>No transactions yet</Text>
         ) : (
           transactions.slice(0, 5).map((transaction) => (
-            <View key={transaction._id} style={styles.transactionItem}>
+            <TouchableOpacity
+              key={transaction._id}
+              style={styles.transactionItem}
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate('TransactionDetail', { transaction })}
+            >
               <View style={styles.transactionInfo}>
                 <Text style={styles.transactionDescription}>
                   {transaction.description ?? transaction.type.toUpperCase()}
@@ -130,7 +139,7 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
               <Text
                 style={[
                   styles.transactionAmount,
-                  transaction.type === 'credit'
+                  transaction.type === 'recharge'
                     ? styles.creditAmount
                     : styles.debitAmount,
                 ]}
@@ -138,11 +147,11 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
                 {transaction.type === 'recharge'
                   ? '+'
                   : transaction.type === 'bill'
-                  ? '-'
-                  : ''}
+                    ? '-'
+                    : ''}
                 {formatAmount(transaction.amount)} {transaction.currency ?? 'ETB'}
               </Text>
-            </View>
+            </TouchableOpacity>
           ))
         )}
       </View>
