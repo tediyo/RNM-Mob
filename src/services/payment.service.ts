@@ -11,6 +11,7 @@ export interface InitializePaymentPayload {
 export interface InitializeStripePayload {
   amount: number;
   currency: string;
+  return_url?: string;
 }
 
 class PaymentService {
@@ -44,6 +45,7 @@ class PaymentService {
         .post(API_CONFIG.ENDPOINTS.PAYMENT.STRIPE_INITIALIZE, {
           amount: data.amount,
           currency: data.currency,
+          return_url: data.return_url,
         });
 
       console.log('Stripe Response:', JSON.stringify(response.data, null, 2));

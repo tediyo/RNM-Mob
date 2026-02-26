@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { API_CONFIG } from '../../config/api';
@@ -22,11 +23,17 @@ const RechargeScreen: React.FC<RechargeScreenProps> = ({ navigation }) => {
   const [amount, setAmount] = useState('');
   const [chapaLoading, setChapaLoading] = useState(false);
   const [stripeLoading, setStripeLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successAmount, setSuccessAmount] = useState(0);
 
   const parseAmount = () => {
     const amountNum = parseFloat(amount);
     if (!amount || isNaN(amountNum) || amountNum <= 0) {
       Alert.alert('Error', 'Please enter a valid amount');
+      return null;
+    }
+    if (amountNum > 999999) {
+      Alert.alert('Error', 'Amount must not exceed 999,999 ETB');
       return null;
     }
     return amountNum;
@@ -45,9 +52,6 @@ const RechargeScreen: React.FC<RechargeScreenProps> = ({ navigation }) => {
         return_url: `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PAYMENT.CHAPA_SUCCESS}`,
       });
 
-      console.log('Full Chapa Response:', JSON.stringify(response, null, 2));
-
-      // Try multiple possible response structures
       const url =
         response?.data?.checkout_url ||
         response?.data?.data?.checkout_url ||
@@ -56,64 +60,32 @@ const RechargeScreen: React.FC<RechargeScreenProps> = ({ navigation }) => {
         response?.mobile_url ||
         response?.url;
 
+      const tx_ref = response?.tx_ref || response?.data?.tx_ref;
+
       if (url) {
-        console.log('Opening Chapa URL:', url);
-        const result = await WebBrowser.openBrowserAsync(url);
-        console.log('Browser result:', result);
+        await WebBrowser.openBrowserAsync(url);
 
         // After browser closes, verify payment status
         if (tx_ref) {
-          console.log('Post-browser: Verifying payment for tx_ref:', tx_ref);
           try {
             const verifyResponse = await paymentService.verifyChapaPayment(tx_ref);
-            console.log('Chapa verify result:', JSON.stringify(verifyResponse, null, 2));
-
             if (verifyResponse?.status === 'success') {
-              Alert.alert(
-                'Payment Successful',
-                `Your wallet has been recharged with ${amountNum} ETB.`,
-                [{ text: 'OK', onPress: () => navigation.goBack() }]
-              );
+              setSuccessAmount(amountNum);
+              setShowSuccessModal(true);
             } else {
-              console.log('Payment not yet success:', verifyResponse?.status);
-              Alert.alert(
-                'Payment Pending',
-                'Your payment is being processed. Please check your balance shortly.',
-                [{ text: 'OK', onPress: () => navigation.goBack() }]
-              );
+              Alert.alert('Payment Pending', 'Your payment is being processed.');
+              navigation.goBack();
             }
           } catch (verifyError: any) {
-            console.error('Chapa verify error details:', {
-              message: verifyError.message,
-              response: verifyError.response?.data,
-            });
-            Alert.alert(
-              'Payment Status Unknown',
-              'Payment may have been processed. Please refresh your wallet to check your balance.',
-              [{ text: 'OK', onPress: () => navigation.goBack() }]
-            );
+            Alert.alert('Status Unknown', 'Please check your balance shortly.');
+            navigation.goBack();
           }
         }
       } else {
-        console.error('No URL found in response:', response);
-        Alert.alert(
-          'Error',
-          'Payment URL not found in response. Response: ' + JSON.stringify(response),
-        );
+        Alert.alert('Error', 'Payment URL not found');
       }
     } catch (error: any) {
-      console.error('Chapa error details:', {
-        message: error.message,
-        stack: error.stack,
-        response: error.response?.data,
-      });
-
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Failed to start Chapa payment. Please check your connection and try again.';
-
-      Alert.alert('Payment Error', errorMessage);
+      Alert.alert('Payment Error', error?.message || 'Failed to start payment');
     } finally {
       setChapaLoading(false);
     }
@@ -128,60 +100,49 @@ const RechargeScreen: React.FC<RechargeScreenProps> = ({ navigation }) => {
       const response = await paymentService.initializeStripe({
         amount: amountNum,
         currency: 'ETB',
+        return_url: `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PAYMENT.CHAPA_SUCCESS}`,
       });
 
       const sessionId = response?.sessionId;
 
       if (response?.url) {
-        const result = await WebBrowser.openBrowserAsync(response.url);
-        console.log('Stripe browser result:', result);
+        await WebBrowser.openBrowserAsync(response.url);
 
-        // After browser closes, verify the payment with the backend
         if (sessionId) {
           try {
+            // Add a small delay for Stripe to process
+            await new Promise(resolve => setTimeout(resolve, 1500));
             const verifyResponse = await paymentService.verifyStripePayment(sessionId);
-            console.log('Stripe verify result:', JSON.stringify(verifyResponse, null, 2));
 
             if (verifyResponse?.status === 'success') {
-              Alert.alert(
-                'Payment Successful',
-                `Your wallet has been recharged with ${amountNum} ETB.`,
-                [{ text: 'OK', onPress: () => navigation.goBack() }]
-              );
+              setSuccessAmount(amountNum);
+              setShowSuccessModal(true);
             } else {
-              Alert.alert(
-                'Payment Pending',
-                'Your payment is being processed. Please check your balance shortly.',
-                [{ text: 'OK' }]
-              );
+              Alert.alert('Payment Pending', 'If you completed the payment, your balance will update shortly.');
+              navigation.goBack();
             }
           } catch (verifyError: any) {
-            console.log('Stripe verify error:', verifyError.message);
-            Alert.alert(
-              'Payment Status Unknown',
-              'Payment may have been processed. Please refresh your wallet to check your balance.',
-              [{ text: 'OK' }]
-            );
+            Alert.alert('Status Unknown', 'Please check your balance shortly.');
+            navigation.goBack();
           }
         }
       } else {
         Alert.alert('Error', 'Stripe checkout URL not found');
       }
     } catch (error: any) {
-      console.log(
-        'Stripe error:',
-        JSON.stringify(error?.response?.data || error, null, 2),
-      );
-      Alert.alert(
-        'Error',
-        error?.response?.data?.message ||
-        JSON.stringify(
-          error?.response?.data || error.message || 'Failed to start Stripe payment',
-        ),
-      );
+      Alert.alert('Error', error?.message || 'Failed to start Stripe payment');
     } finally {
       setStripeLoading(false);
     }
+  };
+
+  const onSuccessClose = () => {
+    setShowSuccessModal(false);
+    // Navigate home and reset stack to ensure balance refresh
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Home' }],
+    });
   };
 
   return (
@@ -227,6 +188,30 @@ const RechargeScreen: React.FC<RechargeScreenProps> = ({ navigation }) => {
             <Text style={styles.stripeButtonText}>Pay with Stripe</Text>
           )}
         </TouchableOpacity>
+
+        <Modal
+          visible={showSuccessModal}
+          transparent={true}
+          animationType="fade"
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.successIconContainer}>
+                <Text style={styles.successIconText}>✓</Text>
+              </View>
+              <Text style={styles.modalTitle}>Payment Successful!</Text>
+              <Text style={styles.modalMessage}>
+                Your wallet has been recharged with {successAmount} ETB.
+              </Text>
+              <TouchableOpacity
+                style={styles.modalButton}
+                onPress={onSuccessClose}
+              >
+                <Text style={styles.modalButtonText}>OK</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
     </KeyboardAvoidingView>
   );
@@ -300,6 +285,66 @@ const styles = StyleSheet.create({
   },
   stripeButtonText: {
     color: '#007AFF',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  successIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  successIconText: {
+    color: '#fff',
+    fontSize: 40,
+    fontWeight: 'bold',
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 24,
+  },
+  modalButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    width: '100%',
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: '#fff',
     fontSize: 18,
     fontWeight: '600',
   },
