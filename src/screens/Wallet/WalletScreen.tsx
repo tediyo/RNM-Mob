@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import walletService, { Wallet, WalletTransaction } from '../../services/wallet.service';
 import { useAuth } from '../../context/AuthContext';
 
@@ -25,6 +26,7 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showBalance, setShowBalance] = useState(true);
   const { logout } = useAuth();
 
   // Refresh wallet data every time the screen comes into focus
@@ -95,9 +97,23 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
       </View>
 
       <View style={styles.balanceCard}>
-        <Text style={styles.balanceLabel}>Available Balance</Text>
+        <View style={styles.balanceHeader}>
+          <Text style={styles.balanceLabel}>Available Balance</Text>
+          <TouchableOpacity
+            onPress={() => setShowBalance(!showBalance)}
+            style={styles.eyeButton}
+          >
+            <Ionicons
+              name={showBalance ? 'eye-outline' : 'eye-off-outline'}
+              size={20}
+              color="rgba(255, 255, 255, 0.8)"
+            />
+          </TouchableOpacity>
+        </View>
         <Text style={styles.balanceAmount}>
-          {wallet?.balance?.toFixed(2) || '0.00'} {wallet?.currency || 'ETB'}
+          {showBalance
+            ? `${wallet?.balance?.toFixed(2) || '0.00'} ${wallet?.currency || 'ETB'}`
+            : `•••••• ${wallet?.currency || 'ETB'}`}
         </Text>
       </View>
 
@@ -198,7 +214,15 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     opacity: 0.9,
+  },
+  balanceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
+    gap: 8,
+  },
+  eyeButton: {
+    padding: 4,
   },
   balanceAmount: {
     color: '#fff',
