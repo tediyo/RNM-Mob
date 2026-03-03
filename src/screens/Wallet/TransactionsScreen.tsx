@@ -64,10 +64,10 @@ const TransactionsScreen: React.FC<TransactionsScreenProps> = ({ navigation }) =
         <Text
           style={[
             styles.transactionAmount,
-            item.type === 'recharge' ? styles.creditAmount : styles.debitAmount,
+            item.direction === 'IN' ? styles.creditAmount : styles.debitAmount,
           ]}
         >
-          {item.type === 'recharge' ? '+' : item.type === 'bill' ? '-' : ''}
+          {item.direction === 'IN' ? '+' : '-'}
           {formatAmount(item.amount)}
         </Text>
         <Text style={styles.transactionCurrency}>

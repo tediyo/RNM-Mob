@@ -34,8 +34,9 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ route
   const [downloading, setDownloading] = useState(false);
   const config = typeConfig[transaction.type] || typeConfig.recharge;
 
-  const isCredit = transaction.type === 'recharge';
-  const sign = isCredit ? '+' : transaction.type === 'bill' ? '-' : '';
+  // Robust direction check for backward compatibility
+  const isCredit = transaction.direction ? transaction.direction === 'IN' : transaction.type === 'recharge';
+  const sign = isCredit ? '+' : '-';
   const amountStr = typeof transaction.amount === 'number'
     ? transaction.amount.toFixed(2)
     : '0.00';
@@ -60,23 +61,24 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ route
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
           <style>
-            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; }
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; line-height: 1.4; }
             .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
             .logo { font-size: 28px; font-weight: bold; color: #007AFF; }
             .invoice-title { font-size: 32px; font-weight: bold; text-align: right; color: #999; }
-            .details-container { display: flex; justify-content: space-between; margin-bottom: 40px; }
-            .detail-box h3 { font-size: 14px; text-transform: uppercase; color: #999; margin-bottom: 8px; }
-            .detail-box p { font-size: 16px; margin: 0; font-weight: 500; }
+            .details-container { display: flex; justify-content: space-between; margin-bottom: 40px; gap: 20px; }
+            .detail-box { flex: 1; }
+            .detail-box h3 { font-size: 14px; text-transform: uppercase; color: #999; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+            .detail-box p { font-size: 15px; margin: 0; font-weight: 500; }
             table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
             th { text-align: left; padding: 12px; border-bottom: 2px solid #eee; color: #999; font-size: 14px; text-transform: uppercase; }
             td { padding: 20px 12px; border-bottom: 1px solid #eee; }
             .amount { font-size: 24px; font-weight: bold; }
             .footer { margin-top: 60px; display: flex; justify-content: space-between; align-items: center; }
-            .stamp { width: 150px; height: 150px; border: 4px solid #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; transform: rotate(-15deg); color: #dc2626; font-size: 20px; font-weight: bold; text-transform: uppercase; opacity: 0.6; }
-            .stamp-inner { border: 2px solid #dc2626; border-radius: 50%; width: 130px; height: 130px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-            .summary { text-align: right; }
-            .summary-item { margin-bottom: 8px; font-size: 18px; }
-            .total { font-size: 28px; font-weight: bold; color: #007AFF; border-top: 2px solid #007AFF; padding-top: 8px; margin-top: 8px; }
+            .stamp { width: 140px; height: 140px; border: 4px solid ${isCredit ? '#16a34a' : '#dc2626'}; border-radius: 50%; display: flex; align-items: center; justify-content: center; transform: rotate(-15deg); color: ${isCredit ? '#16a34a' : '#dc2626'}; font-size: 18px; font-weight: bold; text-transform: uppercase; opacity: 0.7; }
+            .stamp-inner { border: 2px solid ${isCredit ? '#16a34a' : '#dc2626'}; border-radius: 50%; width: 120px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+            .summary { text-align: right; min-width: 200px; }
+            .summary-item { margin-bottom: 8px; font-size: 16px; color: #666; }
+            .total { font-size: 24px; font-weight: bold; color: #333; border-top: 2px solid #eee; padding-top: 12px; margin-top: 8px; }
           </style>
         </head>
         <body>
@@ -89,14 +91,27 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ route
             <div class="detail-box">
               <h3>Billed To</h3>
               <p>${user?.name || 'Customer'}</p>
-              <p style="font-size: 14px; color: #666;">${user?.email || ''}</p>
-              <p style="font-size: 12px; color: #999;">ID: ${user?.id || ''}</p>
+              <p style="font-size: 13px; color: #666; font-weight: normal;">${user?.email || ''}</p>
+              <p style="font-size: 11px; color: #999; font-weight: normal;">ID: ${user?.id || ''}</p>
             </div>
-            <div class="detail-box" style="text-align: right;">
-              <h3>Invoice Date</h3>
-              <p>${formattedDate}</p>
-              <h3>Transaction ID</h3>
-              <p style="font-family: monospace; font-size: 12px;">${transaction._id}</p>
+            <div class="detail-box">
+              <h3>Transaction Info</h3>
+              <p>Type: ${config.label}</p>
+              <p>Reference: ${transaction._id.substring(transaction._id.length - 8).toUpperCase()}</p>
+              <p>Date: ${formattedDate}</p>
+            </div>
+          </div>
+
+          <div class="details-container" style="margin-bottom: 20px;">
+             <div class="detail-box">
+              <h3>Transfer Details</h3>
+              ${transaction.type === 'transfer' ? `
+                <p>${isCredit ? 'From' : 'To'}: ${isCredit ? (transaction.fromUser?.name || 'Sender') : (transaction.toUser?.name || 'Receiver')}</p>
+                <p style="font-size: 13px; color: #666; font-weight: normal;">Direction: ${isCredit ? 'Credit (Received)' : 'Debit (Sent)'}</p>
+              ` : `
+                <p>Status: Successful</p>
+                <p style="font-size: 13px; color: #666; font-weight: normal;">Description: ${transaction.description || config.label}</p>
+              `}
             </div>
           </div>
 
@@ -110,11 +125,13 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ route
             <tbody>
               <tr>
                 <td>
-                  <strong style="font-size: 18px;">${config.label}</strong><br/>
-                  <span style="color: #666; font-size: 14px;">${transaction.description || 'Wallet transaction'}</span>
+                  <strong style="font-size: 18px;">${transaction.description || config.label}</strong><br/>
+                  <span style="color: #666; font-size: 13px;">ID: ${transaction._id}</span>
                 </td>
                 <td style="text-align: right;" class="amount">
-                  ${sign}${amountStr} ${transaction.currency || 'ETB'}
+                  <span style="color: ${isCredit ? '#16a34a' : '#dc2626'};">
+                    ${sign}${amountStr} ${transaction.currency || 'ETB'}
+                  </span>
                 </td>
               </tr>
             </tbody>
@@ -123,20 +140,21 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({ route
           <div class="footer">
             <div class="stamp">
               <div class="stamp-inner">
-                <div>OFFICIAL</div>
-                <div style="font-size: 12px; margin-top: 4px;">VERIFIED</div>
-                <div style="font-size: 10px; margin-top: 4px;">${new Date().getFullYear()}</div>
+                <div>${isCredit ? 'RECEIVED' : 'PAID'}</div>
+                <div style="font-size: 10px; margin-top: 4px;">VERIFIED BY</div>
+                <div style="font-size: 11px; font-weight: bold;">RNM SYSTEM</div>
               </div>
             </div>
             <div class="summary">
               <div class="summary-item">Subtotal: ${amountStr} ${transaction.currency || 'ETB'}</div>
-              <div class="summary-item">Tax (0%): 0.00 ${transaction.currency || 'ETB'}</div>
+              <div class="summary-item">Charges (0.00%): 0.00 ${transaction.currency || 'ETB'}</div>
               <div class="total">TOTAL: ${amountStr} ${transaction.currency || 'ETB'}</div>
             </div>
           </div>
           
-          <div style="margin-top: 80px; text-align: center; color: #999; font-size: 12px;">
-            Thank you for using RNM Wallet. This is a computer-generated invoice and does not require a signature.
+          <div style="margin-top: 60px; text-align: center; color: #999; font-size: 11px; border-top: 1px solid #eee; padding-top: 20px;">
+            This is an electronically generated document. No signature is required. <br/>
+            RNM Wallet - Digital Payment Solutions
           </div>
         </body>
       </html>

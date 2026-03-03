@@ -34,6 +34,9 @@ export interface WalletTransaction {
   _id: string;
   type: 'recharge' | 'transfer' | 'bill';
   amount?: number;
+  direction?: 'IN' | 'OUT';
+  fromUser?: { _id: string; name: string; email: string };
+  toUser?: { _id: string; name: string; email: string };
   // Optional / derived fields used by the UI
   currency?: string;
   description?: string;

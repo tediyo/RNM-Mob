@@ -176,16 +176,12 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
               <Text
                 style={[
                   styles.transactionAmount,
-                  transaction.type === 'recharge'
+                  transaction.direction === 'IN'
                     ? styles.creditAmount
                     : styles.debitAmount,
                 ]}
               >
-                {transaction.type === 'recharge'
-                  ? '+'
-                  : transaction.type === 'bill'
-                    ? '-'
-                    : ''}
+                {transaction.direction === 'IN' ? '+' : '-'}
                 {formatAmount(transaction.amount)} {transaction.currency ?? 'ETB'}
               </Text>
             </TouchableOpacity>
