@@ -91,9 +91,14 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
     >
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Wallet</Text>
-        <TouchableOpacity onPress={handleLogout}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+            <Ionicons name="person-circle-outline" size={28} color="#007AFF" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleLogout}>
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.balanceCard}>
@@ -122,13 +127,29 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
           style={styles.actionButton}
           onPress={() => navigation.navigate('Recharge')}
         >
+          <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
           <Text style={styles.actionButtonText}>Recharge</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => navigation.navigate('Transactions')}
+          onPress={() => navigation.navigate('ScanQr')}
         >
-          <Text style={styles.actionButtonText}>Transactions</Text>
+          <Ionicons name="scan-outline" size={24} color="#007AFF" />
+          <Text style={styles.actionButtonText}>Scan</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => navigation.navigate('ReceiveQr')}
+        >
+          <Ionicons name="qr-code-outline" size={24} color="#007AFF" />
+          <Text style={styles.actionButtonText}>Receive</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => navigation.navigate('Transfer')}
+        >
+          <Ionicons name="send-outline" size={24} color="#007AFF" />
+          <Text style={styles.actionButtonText}>Send</Text>
         </TouchableOpacity>
       </View>
 

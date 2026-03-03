@@ -14,9 +14,12 @@ export interface RechargeData {
 }
 
 export interface TransferData {
-  recipientEmail: string;
+  toUserId?: string;
+  phoneNumber?: string;
   amount: number;
-  currency?: string;
+  pin: string;
+  note?: string;
+  idempotencyKey?: string;
 }
 
 export interface PayBillData {
@@ -69,11 +72,31 @@ class WalletService {
     try {
       const response = await apiService.getInstance().post(
         API_CONFIG.ENDPOINTS.WALLET.TRANSFER,
-        {
-          recipientEmail: data.recipientEmail,
-          amount: data.amount,
-          currency: data.currency || 'ETB',
-        }
+        data
+      );
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async generateQr(amount: number, note?: string): Promise<any> {
+    try {
+      const response = await apiService.getInstance().post(
+        '/wallet/qr/generate',
+        { amount, note }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async scanQr(payload: string, signature: string, pin: string): Promise<any> {
+    try {
+      const response = await apiService.getInstance().post(
+        '/wallet/qr/scan',
+        { payload, signature, pin }
       );
       return response.data;
     } catch (error: any) {
