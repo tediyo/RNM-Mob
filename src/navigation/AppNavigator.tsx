@@ -8,6 +8,10 @@ import WalletScreen from '../screens/Wallet/WalletScreen';
 import RechargeScreen from '../screens/Wallet/RechargeScreen';
 import TransactionsScreen from '../screens/Wallet/TransactionsScreen';
 import TransactionDetailScreen from '../screens/Wallet/TransactionDetailScreen';
+import ReceiveQrScreen from '../screens/Wallet/ReceiveQrScreen';
+import TransferScreen from '../screens/Wallet/TransferScreen';
+import ScanQrScreen from '../screens/Wallet/ScanQrScreen';
+import ProfileScreen from '../screens/Profile/ProfileScreen';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 
 export type RootStackParamList = {
@@ -17,6 +21,10 @@ export type RootStackParamList = {
   Recharge: undefined;
   Transactions: undefined;
   TransactionDetail: { transaction: any };
+  ReceiveQr: undefined;
+  Transfer: undefined;
+  ScanQr: undefined;
+  Profile: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -71,6 +79,42 @@ const AppNavigator: React.FC = () => {
               options={{
                 headerShown: true,
                 title: 'Transaction Details',
+                headerBackTitle: 'Back',
+              }}
+            />
+            <Stack.Screen
+              name="ReceiveQr"
+              component={ReceiveQrScreen}
+              options={{
+                headerShown: true,
+                title: 'Receive Money',
+                headerBackTitle: 'Back',
+              }}
+            />
+            <Stack.Screen
+              name="Transfer"
+              component={TransferScreen}
+              options={{
+                headerShown: true,
+                title: 'Send Money',
+                headerBackTitle: 'Back',
+              }}
+            />
+            <Stack.Screen
+              name="ScanQr"
+              component={ScanQrScreen}
+              options={{
+                headerShown: true,
+                title: 'Scan & Pay',
+                headerBackTitle: 'Back',
+              }}
+            />
+            <Stack.Screen
+              name="Profile"
+              component={ProfileScreen}
+              options={{
+                headerShown: true,
+                title: 'My Profile',
                 headerBackTitle: 'Back',
               }}
             />
